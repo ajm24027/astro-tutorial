@@ -1,0 +1,37 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import BlogPost from '../../components/BlogPost.astro'
+
+export async function getStaticPaths() {
+  // What I think we're doing here is returning an array of objects that include post tag parameters and coupling them with all posts - because later we'll use the filter method to filter through all of the posts that are included in the props with each parameter > which will result in returning BlogPost components where each post has the included tag.
+  const allPosts = await Astro.glob('../posts/*.md')
+  // The const goes through each Markdown post, one by one, and combines each array of tags into one single larger array. Then, it makes a new Set from all the individual tags it found (to ignore repeated values). Finally, it turns that set into an array (with no duplications), that you can use to show a list of tags on your page.
+  const uniqueTags = [
+    ...new Set(allPosts.map((post) => post.frontmatter.tags).flat())
+  ]
+  // This is written I think so that in the future when we add a blogPost that has a unique Tag, it is automatically added to the list of tags via the allPosts variable & Astro.glob().
+  return uniqueTags.map((tag) => {
+    const filteredPosts = allPosts.filter((post) =>
+      post.frontmatter.tags.includes(tag)
+    )
+    return {
+      params: { tag },
+      props: { posts: filteredPosts }
+    }
+  })
+}
+
+const { tag } = Astro.params
+const { posts } = Astro.props
+---
+
+<BaseLayout pageTitle={tag}>
+  <p>Posts tagged with {tag}</p>
+  <ul>
+    {
+      posts.map((post) => (
+        <BlogPost url={post.url} title={post.frontmatter.title} />
+      ))
+    }
+  </ul>
+</BaseLayout>
